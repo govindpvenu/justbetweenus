@@ -19,7 +19,7 @@ function Lobby() {
   const { username } = useUsername();
   const { mutate: createRoom } = useMutation({
     mutationFn: async () => {
-      const response = await client.rooms.create.post();
+      const res = await client.rooms.create.post();
     },
   });
 
