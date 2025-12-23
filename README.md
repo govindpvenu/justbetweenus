@@ -1,4 +1,4 @@
-# 🚀 Private Chat - Real-Time Self-Destructing Chat Rooms
+# 🚀 Just Between Us - Real-Time Self-Destructing Chat Rooms
 
 > A **modern**, **secure**, and **lightning-fast** real-time chat application built with cutting-edge web technologies. Create private chat rooms that automatically self-destruct after 10 minutes, ensuring your conversations remain ephemeral and secure.
 
@@ -81,7 +81,7 @@
 
    ```bash
    git clone <repository-url>
-   cd realtime-chat
+   cd justbetweenus
    ```
 
 2. **Install dependencies**
@@ -132,7 +132,7 @@
 ## 📝 Project Structure
 
 ```
-realtime-chat/
+justbetweenus/
 ├── src/
 │   ├── app/              # Next.js App Router pages
 │   │   ├── api/          # API routes (Elysia)
