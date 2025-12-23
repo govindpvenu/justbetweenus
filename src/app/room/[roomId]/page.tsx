@@ -6,7 +6,7 @@ import { useRealtime } from "@/lib/realtime-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 function formatTimeRemaining(seconds: number) {
   const mins = Math.floor(seconds / 60);
@@ -35,8 +35,12 @@ const Page = () => {
     },
   });
 
+  const updateTimeRemaining = useEffectEvent((ttl: number) => {
+    setTimeRemaining(ttl);
+  });
+
   useEffect(() => {
-    if (ttlData?.ttl !== undefined) setTimeRemaining(ttlData.ttl);
+    if (ttlData?.ttl !== undefined) updateTimeRemaining(ttlData.ttl);
   }, [ttlData]);
 
   useEffect(() => {
