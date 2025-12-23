@@ -1,7 +1,9 @@
 "use client";
 
 import { useUsername } from "@/hooks/use-username";
+import { useMutation } from "@tanstack/react-query";
 import { Suspense } from "react";
+import { client } from "../lib/client";
 
 const Page = () => {
   return (
@@ -15,6 +17,11 @@ export default Page;
 
 function Lobby() {
   const { username } = useUsername();
+  const { mutate: createRoom } = useMutation({
+    mutationFn: async () => {
+      const response = await client.rooms.create.post();
+    },
+  });
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -42,7 +49,10 @@ function Lobby() {
               </div>
             </div>
 
-            <button className="w-full bg-zinc-100 text-black p-3 text-sm font-bold hover:bg-zinc-50 hover:text-black transition-colors mt-2 cursor-pointer disabled:opacity-50">
+            <button
+              onClick={() => createRoom()}
+              className="w-full bg-zinc-100 text-black p-3 text-sm font-bold hover:bg-zinc-50 hover:text-black transition-colors mt-2 cursor-pointer disabled:opacity-50"
+            >
               CREATE SECURE ROOM
             </button>
           </div>
