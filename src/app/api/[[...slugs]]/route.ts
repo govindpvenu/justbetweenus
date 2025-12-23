@@ -78,7 +78,6 @@ const messages = new Elysia({ prefix: "/messages" })
       const remaining = await redis.ttl(`meta:${roomId}`);
 
       await redis.expire(`messages:${roomId}`, remaining);
-      await redis.expire(`history:${roomId}`, remaining);
       await redis.expire(roomId, remaining);
     },
     {
