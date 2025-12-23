@@ -4,6 +4,7 @@ import { useUsername } from "@/hooks/use-username";
 import { useMutation } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { client } from "../lib/client";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   return (
@@ -17,9 +18,13 @@ export default Page;
 
 function Lobby() {
   const { username } = useUsername();
+  const router = useRouter();
   const { mutate: createRoom } = useMutation({
     mutationFn: async () => {
       const res = await client.rooms.create.post();
+      if (res.status === 200) {
+        router.push(`/room/${res.data?.roomId}`);
+      }
     },
   });
 
