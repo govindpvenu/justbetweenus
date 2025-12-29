@@ -26,6 +26,7 @@ const Page = () => {
 
   const [copyStatus, setCopyStatus] = useState("COPY");
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
 
   const { data: ttlData } = useQuery({
     queryKey: ["ttl", roomId],
@@ -149,13 +150,34 @@ const Page = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => destroyRoom()}
-          className="text-xs bg-zinc-800 hover:bg-red-600 px-3 py-1.5 rounded text-zinc-400 hover:text-white font-bold transition-all group flex items-center gap-2 disabled:opacity-50"
-        >
-          <span className="group-hover:animate-pulse">💣</span>
-          DESTROY NOW
-        </button>
+        {showDestroyConfirm ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-400">Are you sure?</span>
+            <button
+              onClick={() => {
+                destroyRoom();
+                setShowDestroyConfirm(false);
+              }}
+              className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-white font-bold transition-all flex items-center gap-2"
+            >
+              YES
+            </button>
+            <button
+              onClick={() => setShowDestroyConfirm(false)}
+              className="text-xs bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded text-zinc-400 hover:text-white font-bold transition-all"
+            >
+              CANCEL
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowDestroyConfirm(true)}
+            className="text-xs bg-zinc-800  px-3 py-1.5 rounded text-zinc-400 hover:text-white font-bold transition-all group flex items-center gap-2 disabled:opacity-50"
+          >
+            <span className="group-hover:animate-pulse">💣</span>
+            DESTROY NOW
+          </button>
+        )}
       </header>
 
       {/* MESSAGES */}

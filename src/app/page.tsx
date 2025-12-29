@@ -24,7 +24,7 @@ function Lobby() {
   const wasDestroyed = searchParams.get("destroyed") === "true";
   const error = searchParams.get("error");
 
-  const { mutate: createRoom } = useMutation({
+  const { mutate: createRoom, isPending } = useMutation({
     mutationFn: async () => {
       const res = await client.room.create.post();
 
@@ -87,9 +87,10 @@ function Lobby() {
 
             <button
               onClick={() => createRoom()}
-              className="w-full bg-zinc-100 text-black p-3 text-sm font-bold hover:bg-zinc-50 hover:text-black transition-colors mt-2 cursor-pointer disabled:opacity-50"
+              className="w-full bg-zinc-100 text-black p-3 text-sm font-bold hover:bg-zinc-50 hover:text-black transition-colors mt-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isPending}
             >
-              CREATE SECURE ROOM
+              {isPending ? "CREATING..." : "CREATE SECURE ROOM"}
             </button>
           </div>
         </div>
