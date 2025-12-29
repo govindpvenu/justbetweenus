@@ -17,7 +17,7 @@ const Page = () => {
 export default Page;
 
 function Lobby() {
-  const { username } = useUsername();
+  const { username, regenerateUsername } = useUsername();
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -82,6 +82,27 @@ function Lobby() {
                 <div className="flex-1 bg-zinc-950 border border-zinc-800 p-3 text-sm text-zinc-400 font-mono">
                   {username}
                 </div>
+                <button
+                  onClick={regenerateUsername}
+                  className="bg-zinc-800 border border-zinc-700 px-4 py-3 text-sm text-zinc-400 hover:bg-zinc-700 hover:text-zinc-300 transition-colors font-mono"
+                  type="button"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-rotate-ccw-icon lucide-rotate-ccw"
+                  >
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                </button>
               </div>
             </div>
 

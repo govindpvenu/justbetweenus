@@ -29,5 +29,11 @@ export const useUsername = () => {
     main();
   }, []);
 
-  return { username };
+  const regenerateUsername = () => {
+    const generated = generateUsername();
+    localStorage.setItem(STORAGE_KEY, generated);
+    setUsername(generated);
+  };
+
+  return { username, regenerateUsername };
 };
