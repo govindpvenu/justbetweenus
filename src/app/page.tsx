@@ -2,6 +2,7 @@
 
 import { useUsername } from "@/hooks/use-username";
 import { client } from "@/lib/client";
+import { generateRoomKey } from "@/lib/encryption";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -28,8 +29,13 @@ function Lobby() {
     mutationFn: async () => {
       const res = await client.room.create.post();
 
-      if (res.status === 200) {
-        router.push(`/room/${res.data?.roomId}`);
+      if (res.status === 200 && res.data?.roomId) {
+        // Generate encryption key for the room
+        const roomKey = await generateRoomKey();
+        
+        // Navigate with key in URL fragment (never sent to server)
+        // Format: /room/[roomId]#key=[encryptionKey]
+        router.push(`/room/${res.data.roomId}#key=${roomKey}`);
       }
     },
   });

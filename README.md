@@ -11,7 +11,8 @@
 ## ✨ Features
 
 - ⚡ **Real-Time Messaging** - Instant message delivery powered by Upstash Realtime
-- 🔒 **Secure & Private** - End-to-end room isolation with secure token-based authentication
+- 🔒 **True End-to-End Encryption** - Messages encrypted client-side with AES-256-GCM. Only participants can read messages, even if the server is compromised
+- 🔐 **Secure Key Sharing** - Encryption keys shared via URL fragments (never sent to server)
 - 💣 **Self-Destructing Rooms** - Automatic room expiration after 10 minutes
 - 🎨 **Modern UI/UX** - Beautiful, responsive interface built with Tailwind CSS 4
 - 🚀 **Lightning Fast** - Optimized performance with React 19 and Next.js 16
@@ -116,10 +117,21 @@
 ## 📖 Usage
 
 1. **Create a Room** - Click "CREATE SECURE ROOM" on the homepage
-2. **Share the Link** - Copy and share the room URL with others
-3. **Chat Securely** - Messages are delivered in real-time
+   - An encryption key is automatically generated and included in the URL
+2. **Share the Link** - Copy and share the **complete** room URL (including the encryption key after `#`)
+   - ⚠️ **Important**: The encryption key is in the URL fragment (`#key=...`) - make sure to share the full URL!
+3. **Chat Securely** - Messages are encrypted before sending and decrypted after receiving
+   - Look for the 🔒 "End-to-End Encrypted" indicator in the room header
 4. **Auto-Destruct** - Room automatically expires after 10 minutes
 5. **Manual Destroy** - Click "DESTROY NOW" to instantly delete the room
+
+### 🔑 How Encryption Works
+
+- **Room Creator**: Generates a 256-bit encryption key when creating a room
+- **Key Sharing**: Key is included in the URL fragment (`#key=...`) - this part is never sent to the server
+- **Encryption**: Messages are encrypted client-side using AES-256-GCM before being sent
+- **Decryption**: Messages are decrypted client-side after being received
+- **Server**: Only sees encrypted data (base64 strings) - cannot read your messages
 
 ## 🎯 Key Highlights
 
@@ -147,11 +159,14 @@ justbetweenus/
 
 ## 🔐 Security Features
 
-- Token-based room authentication
-- Room isolation and data separation
-- Automatic data expiration
-- No persistent user data storage
-- Anonymous identity system
+- **End-to-End Encryption** - Messages encrypted with AES-256-GCM before sending to server
+- **Zero-Knowledge Architecture** - Server never sees encryption keys or plaintext messages
+- **Secure Key Exchange** - Keys shared via URL fragments (never transmitted to server)
+- **Token-based Room Authentication** - Secure token-based room access control
+- **Room Isolation** - Complete data separation between rooms
+- **Automatic Data Expiration** - Rooms and messages auto-delete after 10 minutes
+- **No Persistent User Data** - No user accounts or data tracking
+- **Anonymous Identity System** - Auto-generated usernames for privacy
 
 ## 🚧 Development
 

@@ -1,7 +1,9 @@
 "use client";
 
 import { useUsername } from "@/hooks/use-username";
+import { useRoomKey } from "@/hooks/use-room-key";
 import { client } from "@/lib/client";
+import { encryptMessage, decryptMessage } from "@/lib/encryption";
 import { useRealtime } from "@/lib/realtime-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -27,6 +29,19 @@ const Page = () => {
   const [copyStatus, setCopyStatus] = useState("COPY");
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [showDestroyConfirm, setShowDestroyConfirm] = useState(false);
+  
+  // Determine if user is room creator (first person - has key in URL or generates one)
+  const [isCreator, setIsCreator] = useState(false);
+  
+  // Get encryption key for this room
+  const { roomKey, keyError, hasKey } = useRoomKey(roomId, isCreator);
+
+  // Check if user is creator on mount
+  useEffect(() => {
+    // If key exists in URL, user is joining; if not, they're creating
+    const hash = window.location.hash;
+    setIsCreator(!hash.includes("key="));
+  }, []);
 
   const { data: ttlData } = useQuery({
     queryKey: ["ttl", roomId],
@@ -66,17 +81,54 @@ const Page = () => {
   }, [timeRemaining, router]);
 
   const { data: messages, refetch } = useQuery({
-    queryKey: ["messages", roomId],
+    queryKey: ["messages", roomId, roomKey],
     queryFn: async () => {
       const res = await client.messages.get({ query: { roomId } });
-      return res.data;
+      
+      // If no encryption key yet, return messages as-is (will be encrypted strings)
+      if (!roomKey || !res.data) {
+        return res.data;
+      }
+
+      // Decrypt messages client-side
+      const decryptedMessages = await Promise.all(
+        (res.data.messages || []).map(async (msg) => {
+          try {
+            // Try to decrypt - if it fails, message might be from before encryption was added
+            const decryptedText = await decryptMessage(msg.text, roomKey);
+            return {
+              ...msg,
+              text: decryptedText,
+            };
+          } catch (error) {
+            // If decryption fails, show error message
+            console.error("Decryption error:", error);
+            return {
+              ...msg,
+              text: "[Unable to decrypt message]",
+            };
+          }
+        })
+      );
+
+      return {
+        messages: decryptedMessages,
+      };
     },
+    enabled: hasKey, // Only fetch when we have encryption key
   });
 
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: async ({ text }: { text: string }) => {
+      if (!roomKey) {
+        throw new Error("Encryption key not available. Please refresh the page.");
+      }
+
+      // Encrypt message before sending to server
+      const encryptedText = await encryptMessage(text, roomKey);
+
       await client.messages.post(
-        { sender: username, text },
+        { sender: username, text: encryptedText }, // Send encrypted text
         { query: { roomId } }
       );
 
@@ -105,16 +157,53 @@ const Page = () => {
   });
 
   const copyLink = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url);
+    // Include encryption key in shared URL (in fragment, never sent to server)
+    const url = new URL(window.location.href);
+    if (roomKey) {
+      url.hash = `key=${roomKey}`;
+    }
+    navigator.clipboard.writeText(url.toString());
     setCopyStatus("COPIED!");
     setTimeout(() => setCopyStatus("COPY"), 2000);
   };
+
+  // Show error if encryption key is missing
+  if (keyError && !hasKey) {
+    return (
+      <main className="flex flex-col h-screen items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-red-500 font-bold text-lg">🔒 Encryption Key Missing</div>
+          <p className="text-zinc-400 text-sm">{keyError}</p>
+          <p className="text-zinc-500 text-xs">
+            Make sure you copied the complete room URL including the encryption key.
+            The key is in the URL after the # symbol.
+          </p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-zinc-800 text-zinc-300 px-4 py-2 rounded text-sm hover:bg-zinc-700 transition-colors"
+          >
+            Go Back
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex flex-col h-screen max-h-screen overflow-hidden">
       <header className="border-b border-zinc-800 p-4 flex items-center justify-between bg-zinc-900/30">
         <div className="flex items-center gap-4">
+          {/* Encryption Status Indicator */}
+          {hasKey && (
+            <>
+              <div className="flex items-center gap-2 text-xs text-green-500">
+                <span>🔒</span>
+                <span className="uppercase font-bold">End-to-End Encrypted</span>
+              </div>
+              <div className="h-8 w-px bg-zinc-800" />
+            </>
+          )}
+          
           <div className="flex flex-col">
             <span className="text-xs text-zinc-500 uppercase">Room ID</span>
             <div className="flex items-center gap-2">
