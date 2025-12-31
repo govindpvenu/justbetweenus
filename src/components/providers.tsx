@@ -9,7 +9,7 @@ export const Providers = ({ children }: { children: React.ReactNode }) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <SerwistProvider swUrl="/sw.ts">
+    <SerwistProvider swUrl="/serwist/sw.js">
       <RealtimeProvider>
         <QueryClientProvider client={queryClient}>
           {children}

@@ -41,10 +41,11 @@ export const metadata: Metadata = {
     },
     description: APP_DESCRIPTION,
   },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#FFFFFF",
+  themeColor: "#000000",
 };
 
 const jetbrainsMono = JetBrains_Mono({
