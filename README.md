@@ -1,4 +1,4 @@
-# 🚀 Just Between Us - Real-Time Self-Destructing Chat Rooms
+# Just Between Us - Shhh...it's just between us.
 
 > A **modern**, **secure**, and **lightning-fast** real-time chat application built with cutting-edge web technologies. Create private chat rooms that automatically self-destruct after 10 minutes, ensuring your conversations remain ephemeral and secure.
 
@@ -123,7 +123,7 @@
 
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 🔑 How Encryption Works
+## 🔑 How End-to-End Encryption Works
 
 Just Between Us uses **true end-to-end encryption** to ensure your messages remain private. All encryption happens client-side using the browser's Web Crypto API - no external dependencies required.
 
@@ -135,7 +135,7 @@ Just Between Us uses **true end-to-end encryption** to ensure your messages rema
 - **Unique IV per Message** - Each message uses a random initialization vector for forward secrecy
 - **Client-Side Only** - All encryption/decryption happens in your browser
 
-For a detailed explanation of the encryption flow, key generation, message encryption, and security guarantees, see the [End-to-End Encryption Documentation](E2EE.md).
+For a detailed explanation of the encryption flow, key generation, message encryption, and security guarantees, see the [End-to-End Encryption Documentation](E2EE.txt).
 
 ## 📄 License
 
