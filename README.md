@@ -53,6 +53,12 @@
 - **Automatic Data Expiration** - Rooms and messages auto-delete after expiration
 - **Authenticated Encryption** - AES-GCM provides message authentication and tamper detection
 
+## 📊 Project Flow Diagram
+
+Diagram: Just Between Us app architecture, encryption, and real-time flow.
+
+**[🔗 View Interactive Flow Diagram on tldraw](https://www.tldraw.com/f/xl7XIQ3W8BzCjcOixfIwb?d=v-468.-11453.2465.1475.page)**
+
 ## 🛠️ Tech Stack
 
 ### Frontend
