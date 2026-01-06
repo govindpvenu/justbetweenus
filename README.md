@@ -1,13 +1,6 @@
 # Just Between Us - Shhh...it's just between us.
 
-> A **modern**, **secure**, and **lightning-fast** real-time chat application built with cutting-edge web technologies. Create private chat rooms that automatically self-destruct after 10 minutes, ensuring your conversations remain ephemeral and secure.
-
-[![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-[![Elysia.js](https://img.shields.io/badge/Elysia.js-1.4-9d4edd?style=for-the-badge&logo=bun)](https://elysiajs.com/)
-[![Redis](https://img.shields.io/badge/Redis-Upstash-red?style=for-the-badge&logo=redis)](https://upstash.com/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
+> Create a private chat room, share the link, and chat. The room disappears after 10 minutes (or you can destroy it manually). All messages are encrypted client-side using AES-256-GCM - the server never sees your encryption keys or plaintext messages.
 
 ## ✨ Features
 
