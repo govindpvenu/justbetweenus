@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { generateRoomKey, isValidKeyFormat } from "@/lib/encryption";
 
 /**
@@ -13,6 +13,9 @@ import { generateRoomKey, isValidKeyFormat } from "@/lib/encryption";
 export function useRoomKey(roomId: string, isRoomCreator: boolean) {
   const [roomKey, setRoomKey] = useState<string | null>(null);
   const [keyError, setKeyError] = useState<string | null>(null);
+  
+  // Track the previous roomId to detect room changes
+  const prevRoomIdRef = useRef<string | null>(null);
 
   // Extract key from URL fragment (the part after #)
   const extractKeyFromUrl = useCallback(() => {
@@ -48,9 +51,27 @@ export function useRoomKey(roomId: string, isRoomCreator: boolean) {
     }
   }, []);
 
-  // Initialize key when component mounts
+  // Reset state when roomId changes (e.g., creating a new room after destroying one)
   useEffect(() => {
+    if (prevRoomIdRef.current !== null && prevRoomIdRef.current !== roomId) {
+      // Room changed - reset state
+      setRoomKey(null);
+      setKeyError(null);
+    }
+    prevRoomIdRef.current = roomId;
+  }, [roomId]);
+
+  // Initialize key when component mounts or room changes
+  useEffect(() => {
+    let isCancelled = false;
+    
     const initializeKey = async () => {
+      // Small delay to allow browser to update URL hash after client-side navigation
+      // This is needed because router.push('/path#hash') may not immediately update window.location.hash
+      await new Promise(resolve => setTimeout(resolve, 0));
+      
+      if (isCancelled) return;
+
       // First, try to get key from URL (if someone shared link with key)
       const existingKey = extractKeyFromUrl();
 
@@ -72,6 +93,10 @@ export function useRoomKey(roomId: string, isRoomCreator: boolean) {
     };
 
     initializeKey();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [roomId, isRoomCreator, extractKeyFromUrl, generateAndSetKey]);
 
   return {

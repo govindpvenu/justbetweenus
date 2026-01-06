@@ -8,22 +8,43 @@
 
 /**
  * Generate a random encryption key for a room
- * Returns a base64-encoded string that can be shared via URL
+ * Returns a URL-safe base64-encoded string that can be shared via URL
  */
 export async function generateRoomKey(): Promise<string> {
   // Generate a 256-bit (32-byte) random key
   const keyBytes = crypto.getRandomValues(new Uint8Array(32));
 
-  // Convert to base64 for easy sharing in URLs
-  return btoa(String.fromCharCode(...keyBytes));
+  // Convert to URL-safe base64 for sharing in URLs
+  // Standard base64 uses + and / which cause issues in URLs
+  // URL-safe base64 replaces: + with -, / with _, and removes padding =
+  const base64 = btoa(String.fromCharCode(...keyBytes));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 /**
- * Import a key from base64 string
+ * Convert URL-safe base64 back to standard base64
+ */
+function urlSafeBase64ToStandard(urlSafeBase64: string): string {
+  // Replace URL-safe characters back to standard base64
+  let base64 = urlSafeBase64.replace(/-/g, "+").replace(/_/g, "/");
+  // Add back padding if needed
+  const padding = base64.length % 4;
+  if (padding) {
+    base64 += "=".repeat(4 - padding);
+  }
+  return base64;
+}
+
+/**
+ * Import a key from base64 string (handles both standard and URL-safe base64)
  */
 async function importKey(keyBase64: string): Promise<CryptoKey> {
+  // Convert URL-safe base64 to standard base64 if needed
+  const standardBase64 = urlSafeBase64ToStandard(keyBase64);
   // Decode base64 to bytes
-  const keyBytes = Uint8Array.from(atob(keyBase64), (c) => c.charCodeAt(0));
+  const keyBytes = Uint8Array.from(atob(standardBase64), (c) =>
+    c.charCodeAt(0)
+  );
 
   // Import as AES-GCM key (256-bit)
   return crypto.subtle.importKey(
@@ -116,10 +137,13 @@ export async function decryptMessage(
 
 /**
  * Check if a key format is valid (32 bytes when decoded)
+ * Handles both standard and URL-safe base64
  */
 export function isValidKeyFormat(keyBase64: string): boolean {
   try {
-    const decoded = atob(keyBase64);
+    // Convert URL-safe base64 to standard base64 if needed
+    const standardBase64 = urlSafeBase64ToStandard(keyBase64);
+    const decoded = atob(standardBase64);
     return decoded.length === 32; // 256 bits = 32 bytes
   } catch {
     return false;
