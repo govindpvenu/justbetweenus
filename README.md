@@ -135,7 +135,7 @@ Just Between Us uses **true end-to-end encryption** to ensure your messages rema
 - **Unique IV per Message** - Each message uses a random initialization vector for forward secrecy
 - **Client-Side Only** - All encryption/decryption happens in your browser
 
-For a detailed explanation of the encryption flow, key generation, message encryption, and security guarantees, see the [End-to-End Encryption Documentation](E2EE.txt).
+For a detailed explanation of the encryption flow, key generation, message encryption, and security guarantees, see the [End-to-End Encryption Documentation](https://github.com/govindpvenu/justbetweenus/blob/docs/docs/E2EE_EXPLAINED.txt).
 
 ## 📄 License
 
