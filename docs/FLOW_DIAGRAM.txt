@@ -1,0 +1,515 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ COMPLETE PROJECT FLOW DIAGRAM                                              │
+│ Just Between Us - Real-Time Encrypted Chat Application                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 1: APPLICATION INITIALIZATION
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ USER OPENS APPLICATION                                                      │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 1. Navigate to http://localhost:3000
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ HOME PAGE (/page.tsx)                                                      │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ 1. Generate Anonymous Username                                              │
+│    ┌───────────────────────────────────────────────────────────────────┐  │
+│    │ useUsername() Hook                                                │  │
+│    │ • Generate random username (e.g., "red-monkey-abc")              │  │
+│    │ • Store in localStorage                                           │  │
+│    │ • Can regenerate anytime                                          │  │
+│    └───────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│ 2. Display UI                                                              │
+│    • Username display                                                      │
+│    • "CREATE SECURE ROOM" button                                           │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 2. User clicks "CREATE SECURE ROOM"
+         ▼
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 2: ROOM CREATION & KEY GENERATION
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: CREATE ROOM REQUEST                                                │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ POST /api/room/create                                                      │
+│ • No authentication required                                               │
+│ • No body parameters                                                       │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 3. HTTP Request
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVER: Elysia API Handler                                                 │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ POST /api/room/create                                                      │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 1. Generate Room ID                                                   │ │
+│ │    nanoid() → "abc123xyz789"                                          │ │
+│ │                                                                       │ │
+│ │ 2. Create Room Metadata in Redis                                     │ │
+│ │    redis.hset("meta:abc123", {                                        │ │
+│ │      connected: [],                                                   │ │
+│ │      createdAt: Date.now()                                            │ │
+│ │    })                                                                 │ │
+│ │                                                                       │ │
+│ │ 3. Set TTL (Time To Live)                                             │ │
+│ │    redis.expire("meta:abc123", 600)  // 10 minutes                  │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ 4. Return Room ID                                                          │
+│    { roomId: "abc123xyz789" }                                              │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 4. Response: { roomId: "abc123xyz789" }
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: GENERATE ENCRYPTION KEY                                            │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ generateRoomKey()                                                          │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 1. Generate Random Key                                                │ │
+│ │    crypto.getRandomValues(new Uint8Array(32))                        │ │
+│ │    → 256-bit (32-byte) random key                                    │ │
+│ │                                                                       │ │
+│ │ 2. Encode to Base64                                                   │ │
+│ │    btoa(String.fromCharCode(...keyBytes))                            │ │
+│ │    → "aB3dEf9GhIjKlMnOpQrStUvWxYz123456=="                           │ │
+│ │                                                                       │ │
+│ │ 3. Make URL-Safe                                                      │ │
+│ │    Replace: + → -, / → _, remove = padding                           │ │
+│ │    → "aB3dEf9GhIjKlMnOpQrStUvWxYz123456"                             │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ 5. Store Key in URL Fragment                                               │
+│    Format: /room/{roomId}#key={encryptionKey}                              │
+│    Example: /room/abc123#key=aB3dEf9GhIjKlMnOpQrStUvWxYz123456              │
+│                                                                             │
+│ ⚠️ CRITICAL: URL fragments (#...) are NEVER sent to server!              │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 6. Navigate to room page
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: ROOM PAGE (/room/[roomId]/page.tsx)                                │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ 1. Extract Key from URL                                                    │
+│    ┌───────────────────────────────────────────────────────────────────┐  │
+│    │ useRoomKey() Hook                                                  │  │
+│    │ • window.location.hash → "#key=aB3dEf9GhIj..."                   │  │
+│    │ • Parse with URLSearchParams                                       │  │
+│    │ • Validate key format (32 bytes when decoded)                     │  │
+│    │ • Store in React state (NEVER sent to server)                    │  │
+│    └───────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+│ 2. Initialize Room                                                         │
+│    • Connect to Upstash Realtime WebSocket                                │
+│    • Subscribe to channel: {roomId}                                        │
+│    • Listen for events: "chat.message", "chat.destroy"                     │
+│                                                                             │
+│ 3. Fetch Room TTL                                                          │
+│    GET /api/room/ttl?roomId=abc123                                         │
+│    → Display countdown timer                                               │
+│                                                                             │
+│ 4. Fetch Message History                                                   │
+│    GET /api/messages?roomId=abc123                                         │
+│    → Decrypt all messages client-side                                      │
+│    → Display in chat interface                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 3: KEY SHARING (OUT-OF-BAND)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────┐                    ┌─────────────────┐
+│ User A (Alice) │                    │ User B (Bob)   │
+│ Room Creator   │                    │ Room Joiner    │
+└────────┬────────┘                    └────────┬────────┘
+         │                                      │
+         │ 1. Copy full URL with key           │
+         │    http://app.com/room/abc123#key=...│
+         │                                      │
+         │ 2. Share via secure channel          │
+         │    • Signal                          │
+         │    • WhatsApp                        │
+         │    • Email                           │
+         │    • In-person                       │
+         │                                      │
+         └──────────────────────────────────────►
+                                                │
+                                                │ 3. Opens shared URL
+                                                ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ USER B: JOINS ROOM                                                         │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ 1. Extract Key from URL                                                    │
+│    • window.location.hash contains key                                     │
+│    • Parse and validate                                                     │
+│    • Store in React state                                                  │
+│                                                                             │
+│ 2. Connect to Room                                                         │
+│    • WebSocket connection to Upstash Realtime                              │
+│    • Subscribe to room channel                                             │
+│                                                                             │
+│ 3. Fetch Room Data                                                         │
+│    • Get TTL (time remaining)                                              │
+│    • Get message history                                                   │
+│    • Decrypt messages with extracted key                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: SENDING ENCRYPTED MESSAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ USER TYPES MESSAGE                                                          │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ Input: "Hello Bob!"                                                         │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 1. User presses Enter or clicks Send
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: ENCRYPT MESSAGE                                                     │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ encryptMessage("Hello Bob!", "aB3dEf9GhIj...")                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ Step 1: Import Encryption Key                                          │ │
+│ │    • Decode Base64 key to bytes                                        │ │
+│ │    • crypto.subtle.importKey()                                         │ │
+│ │    → CryptoKey object (AES-256-GCM)                                    │ │
+│ │                                                                       │ │
+│ │ Step 2: Generate Random IV                                             │ │
+│ │    • crypto.getRandomValues(new Uint8Array(12))                        │ │
+│ │    → 12-byte initialization vector                                      │ │
+│ │    → Unique for each message (forward secrecy)                        │ │
+│ │                                                                       │ │
+│ │ Step 3: Convert Text to Bytes                                          │ │
+│ │    • new TextEncoder().encode("Hello Bob!")                            │ │
+│ │    → Uint8Array[72, 101, 108, 108, 111, ...]                          │ │
+│ │                                                                       │ │
+│ │ Step 4: Encrypt with AES-GCM                                           │ │
+│ │    • crypto.subtle.encrypt({                                           │ │
+│ │        name: "AES-GCM",                                                │ │
+│ │        iv: [random 12 bytes],                                          │ │
+│ │        tagLength: 128                                                  │ │
+│ │      }, key, textBytes)                                                │ │
+│ │    → Encrypted bytes + authentication tag                              │ │
+│ │                                                                       │ │
+│ │ Step 5: Combine IV + Encrypted Data                                    │ │
+│ │    Format: [IV (12 bytes)][Encrypted Data]                             │ │
+│ │    → Uint8Array[combined]                                              │ │
+│ │                                                                       │ │
+│ │ Step 6: Encode to Base64                                                │ │
+│ │    • btoa(String.fromCharCode(...combined))                            │ │
+│ │    → "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="                    │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 2. Send encrypted message to server
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: POST MESSAGE                                                       │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ POST /api/messages?roomId=abc123                                           │
+│ Body: {                                                                    │
+│   sender: "red-monkey-abc",                                                │
+│   text: "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="  // Encrypted!     │
+│ }                                                                           │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 3. HTTP Request (encrypted text only)
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVER: STORE MESSAGE                                                      │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ POST /api/messages Handler                                                 │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 1. Authenticate Request                                                │ │
+│ │    • Validate roomId from query                                        │ │
+│ │    • Check room exists in Redis                                        │ │
+│ │    • Generate/validate token                                           │ │
+│ │                                                                       │ │
+│ │ 2. Create Message Object                                               │ │
+│ │    {                                                                  │ │
+│ │      id: nanoid(),                                                     │ │
+│ │      sender: "red-monkey-abc",                                         │ │
+│ │      text: "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==",           │ │
+│ │      timestamp: Date.now(),                                            │ │
+│ │      roomId: "abc123"                                                  │ │
+│ │    }                                                                  │ │
+│ │                                                                       │ │
+│ │ 3. Store in Redis                                                      │ │
+│ │    redis.rpush("messages:abc123", message)                            │ │
+│ │    • Append to message list                                           │ │
+│ │    • Set TTL to match room expiration                                  │ │
+│ │                                                                       │ │
+│ │ 4. Emit Realtime Event                                                │ │
+│ │    realtime.channel("abc123").emit("chat.message", message)           │ │
+│ │    • Broadcast to all connected clients                                │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ⚠️ SERVER CANNOT READ THE MESSAGE!                                         │
+│    • Server only sees encrypted Base64 string                              │
+│    • Server does NOT have encryption key                                   │
+│    • Server cannot decrypt messages                                        │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 4. WebSocket broadcast
+         ▼
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 5: RECEIVING & DECRYPTING MESSAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: RECEIVE REALTIME EVENT                                             │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ useRealtime() Hook                                                         │
+│ • Listens to WebSocket channel                                             │
+│ • Event received: "chat.message"                                           │
+│ • Triggers message refetch                                                 │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 1. Realtime event received
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: FETCH MESSAGES                                                     │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ GET /api/messages?roomId=abc123                                            │
+│ • Returns all messages for room                                            │
+│ • Messages are encrypted Base64 strings                                    │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 2. Receive encrypted messages
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: DECRYPT MESSAGES                                                   │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ decryptMessage(encryptedBase64, "aB3dEf9GhIj...")                         │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ Step 1: Import Encryption Key                                           │ │
+│ │    • Same key used for encryption                                       │ │
+│ │    • crypto.subtle.importKey()                                          │ │
+│ │                                                                       │ │
+│ │ Step 2: Decode Base64                                                   │ │
+│ │    • atob("Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==")             │ │
+│ │    → Uint8Array[combined data]                                          │ │
+│ │                                                                       │ │
+│ │ Step 3: Extract IV and Encrypted Data                                  │ │
+│ │    • combined.slice(0, 12) → IV                                         │ │
+│ │    • combined.slice(12) → Encrypted Data                                │ │
+│ │                                                                       │ │
+│ │ Step 4: Decrypt with AES-GCM                                            │ │
+│ │    • crypto.subtle.decrypt({                                            │ │
+│ │        name: "AES-GCM",                                                 │ │
+│ │        iv: [extracted IV],                                              │ │
+│ │        tagLength: 128                                                   │ │
+│ │      }, key, encrypted)                                                 │ │
+│ │    → Decrypted bytes                                                    │ │
+│ │                                                                       │ │
+│ │ Step 5: Convert Bytes to Text                                           │ │
+│ │    • new TextDecoder().decode(decrypted)                                │ │
+│ │    → "Hello Bob!"                                                       │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ 3. Display decrypted message
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CLIENT: DISPLAY MESSAGE                                                    │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ Chat Interface                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ red-monkey-abc  14:30                                                 │ │
+│ │ Hello Bob!                                                            │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 6: ROOM EXPIRATION & DESTRUCTION
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ AUTOMATIC EXPIRATION                                                        │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ Redis TTL Expires (10 minutes)                                             │
+│ • Room metadata expires                                                    │
+│ • Messages expire                                                          │
+│ • All data automatically deleted                                            │
+└────────┬────────────────────────────────────────────────────────────────────┘
+         │
+         │ OR
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ MANUAL DESTRUCTION                                                          │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ User clicks "DESTROY NOW"                                                  │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ 1. Client sends DELETE request                                         │ │
+│ │    DELETE /api/room?roomId=abc123                                      │ │
+│ │                                                                       │ │
+│ │ 2. Server destroys room                                                │ │
+│ │    • Emit "chat.destroy" event                                         │ │
+│ │    • Delete room metadata                                              │ │
+│ │    • Delete all messages                                               │ │
+│ │    • Delete room data                                                  │ │
+│ │                                                                       │ │
+│ │ 3. All clients receive destroy event                                   │ │
+│ │    • Redirect to home page                                             │ │
+│ │    • Show "ROOM DESTROYED" message                                     │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+ARCHITECTURE OVERVIEW
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND (Next.js 16 + React 19)                                           │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐ │
+│ │ Home Page            │  │ Room Page            │  │ Components       │ │
+│ │ /page.tsx            │  │ /room/[roomId]       │  │ • Providers      │ │
+│ │ • Create room        │  │ • Chat interface     │  │ • Layout         │ │
+│ │ • Generate username  │  │ • Message display    │  │                  │ │
+│ └──────────────────────┘  │ • Input field        │  └──────────────────┘ │
+│                           └──────────────────────┘                        │
+│                                                                             │
+│ ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐ │
+│ │ Hooks                │  │ Encryption           │  │ Realtime Client  │ │
+│ │ • useRoomKey()       │  │ • generateRoomKey()  │  │ • useRealtime()  │ │
+│ │ • useUsername()       │  │ • encryptMessage()   │  │ • WebSocket      │ │
+│ └──────────────────────┘  │ • decryptMessage()   │  └──────────────────┘ │
+│                           └──────────────────────┘                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP/WebSocket
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BACKEND API (Elysia.js on Bun)                                             │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ ┌──────────────────────┐  ┌──────────────────────┐  ┌──────────────────┐ │
+│ │ Room Endpoints       │  │ Message Endpoints    │  │ Auth Middleware  │ │
+│ │ POST /room/create    │  │ POST /messages       │  │ • Token validate │ │
+│ │ GET  /room/ttl       │  │ GET  /messages       │  │ • Room check     │ │
+│ │ DELETE /room         │  └──────────────────────┘  └──────────────────┘ │
+│ └──────────────────────┘                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    │ API Calls
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ INFRASTRUCTURE                                                              │
+│ ───────────────────────────────────────────────────────────────────────── │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ Upstash Redis                                                         │ │
+│ │ • Room metadata: meta:{roomId}                                       │ │
+│ │ • Messages: messages:{roomId}                                         │ │
+│ │ • Auto-expiration: 10 minutes TTL                                    │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│ ┌───────────────────────────────────────────────────────────────────────┐ │
+│ │ Upstash Realtime                                                     │ │
+│ │ • WebSocket connections                                               │ │
+│ │ • Channels: {roomId}                                                  │ │
+│ │ • Events: chat.message, chat.destroy                                  │ │
+│ └───────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+SECURITY GUARANTEES
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ✅ END-TO-END ENCRYPTION                                                    │
+│ • Messages encrypted before leaving client                                  │
+│ • Server only sees encrypted Base64 strings                                 │
+│ • Server cannot decrypt without the key                                     │
+│                                                                             │
+│ ✅ ZERO-KNOWLEDGE ARCHITECTURE                                              │
+│ • Encryption keys stored in URL fragments (#key=...)                        │
+│ • URL fragments NEVER sent to server                                        │
+│ • Keys only exist in browser memory                                         │
+│                                                                             │
+│ ✅ FORWARD SECRECY                                                          │
+│ • Each message uses unique random IV                                        │
+│ • Same message encrypted twice = different ciphertext                       │
+│                                                                             │
+│ ✅ AUTHENTICATED ENCRYPTION                                                 │
+│ • AES-GCM provides message authentication                                  │
+│ • Detects tampering or corruption                                           │
+│                                                                             │
+│ ✅ NO EXTERNAL DEPENDENCIES                                                 │
+│ • Uses browser Web Crypto API                                               │
+│ • No third-party encryption libraries                                       │
+│                                                                             │
+│ ✅ ROOM ISOLATION                                                           │
+│ • Token-based authentication per room                                       │
+│ • Complete data separation between rooms                                    │
+│                                                                             │
+│ ✅ EPHEMERAL DATA                                                           │
+│ • Rooms auto-expire after 10 minutes                                        │
+│ • Manual destroy option                                                     │
+│ • No persistent user data                                                    │
+│                                                                             │
+│ ✅ ANONYMOUS IDENTITY                                                       │
+│ • Auto-generated usernames                                                  │
+│ • No user accounts or tracking                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+DATA FLOW SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  USER A                    SERVER                    USER B               │
+│  ──────                    ───────                    ──────               │
+│                                                                             │
+│  1. Create Room ──────────► Create room in Redis                           │
+│     Generate Key            Return roomId                                   │
+│     Store in URL fragment                                                   │
+│                                                                             │
+│  2. Share URL ────────────────────────────────────────────────────►        │
+│     (Out of band)                                                           │
+│                                                                             │
+│  3. Type Message                                                           │
+│     Encrypt ──────────────► Store encrypted                                │
+│     (Client-side)            Broadcast event                                │
+│                                                                             │
+│  4. Receive Event ◄───────────────────────────────────────────────────     │
+│     Decrypt                 Fetch messages                                  │
+│     Display                 (Encrypted)                                    │
+│                                                                             │
+│  ⚠️ Encryption key NEVER sent to server!                                   │
+│  ⚠️ Server only sees encrypted Base64 strings!                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘

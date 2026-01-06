@@ -1,0 +1,378 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ END-TO-END ENCRYPTION FLOW - SIMPLE EXPLANATION                            │
+│ Just Between Us - How Your Messages Stay Private                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+OVERVIEW: WHAT IS END-TO-END ENCRYPTION?
+═══════════════════════════════════════════════════════════════════════════════
+
+End-to-End Encryption (E2EE) means:
+  • Messages are encrypted BEFORE leaving your device
+  • Server CANNOT read your messages (only sees scrambled data)
+  • Only people with the encryption key can decrypt and read messages
+  • Even if the server is hacked, your messages stay private
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 1: ROOM CREATION & KEY GENERATION
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────┐
+│   USER A     │
+│  (Alice)     │
+│              │
+│ Clicks:      │
+│ "CREATE      │
+│  ROOM"       │
+└──────┬───────┘
+       │
+       │ 1. Generate 256-bit encryption key
+       │    (Random secret code)
+       ▼
+┌─────────────────────────────┐
+│  🔑 ENCRYPTION KEY          │
+│  Generated:                 │
+│  "aB3dEf9GhIjKlMn..."      │
+│  (32 random bytes)          │
+└──────┬──────────────────────┘
+       │
+       │ 2. Store key in URL fragment
+       │    Format: /room/abc123#key=aB3dEf9GhIj...
+       │
+       │ ⚠️ IMPORTANT: URL fragments (#...) are NEVER sent to server!
+       │    The key stays in your browser only
+       ▼
+┌─────────────────────────────┐
+│  URL Created:               │
+│  /room/abc123#key=aB3dEf9GhIj│
+│  └─────┬────┘ └──────┬──────┘│
+│    Room ID    Encryption Key │
+│              (in fragment)   │
+└─────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 2: SHARING THE KEY (OUT-OF-BAND)
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────┐                    ┌──────────────┐
+│   USER A     │                    │   USER B     │
+│  (Alice)     │                    │   (Bob)      │
+└──────┬───────┘                    └──────┬───────┘
+       │                                    │
+       │ 1. Copy full URL with key         │
+       │    /room/abc123#key=aB3dEf9GhIj...│
+       │                                    │
+       │ 2. Share via secure channel        │
+       │    • Signal / WhatsApp            │
+       │    • Email                         │
+       │    • In-person                     │
+       │                                    │
+       └───────────────────────────────────►
+                                           │
+                                           │ 3. Opens URL
+                                           │    Browser extracts key
+                                           │    from URL fragment
+                                           ▼
+                                    ┌──────────────┐
+                                    │  USER B      │
+                                    │  Has Key!    │
+                                    │  🔑          │
+                                    └──────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP 3: SENDING AN ENCRYPTED MESSAGE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────┐
+│   USER A     │
+│              │
+│ Types:       │
+│ "Hello Bob!" │
+└──────┬───────┘
+       │
+       │ 1. Encrypt message with 🔑
+       │    (AES-256-GCM encryption)
+       │    • Generate random IV (12 bytes)
+       │    • Encrypt text with key + IV
+       │    • Combine IV + encrypted data
+       │    • Encode to Base64
+       ▼
+┌─────────────────────────────┐
+│  🔒 ENCRYPTED MESSAGE       │
+│  "xK9mP2qR5sT8vW..."        │
+│  (Base64 encoded)           │
+│                             │
+│  Format:                    │
+│  [IV][Encrypted Data]       │
+└──────┬──────────────────────┘
+       │
+       │ 2. Send to Server
+       │    POST /api/messages
+       │    { text: "xK9mP2qR5sT8vW..." }
+       │
+       ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                          🌐 SERVER                                      │
+│                                                                         │
+│  Receives:                                                              │
+│  {                                                                      │
+│    text: "xK9mP2qR5sT8vW..."  ← Encrypted!                              │
+│    sender: "red-monkey-abc"                                            │
+│    roomId: "abc123"                                                     │
+│  }                                                                      │
+│                                                                         │
+│  ❌ Server CANNOT read the message                                      │
+│  ❌ Server does NOT have the encryption key                            │
+│  ✅ Server only stores encrypted data                                   │
+│                                                                         │
+│  Stores in Redis & broadcasts to other users                            │
+└──────┬──────────────────────────────────────────────────────────────────┘
+       │
+       │ 3. Broadcast encrypted message
+       │    (WebSocket event)
+       │
+       ▼
+┌──────────────┐
+│   USER B     │
+│              │
+│ Receives:    │
+│ "xK9mP2qR5sT8vW..."  ← Still encrypted!
+└──────┬───────┘
+       │
+       │ 4. Decrypt with 🔑
+       │    • Extract IV from message
+       │    • Decrypt with key + IV
+       │    • Convert bytes to text
+       ▼
+┌──────────────┐
+│   USER B     │
+│              │
+│ Sees:        │
+│ "Hello Bob!" │  ← Plaintext!
+└──────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+ENCRYPTION PROCESS DETAILS
+═══════════════════════════════════════════════════════════════════════════════
+
+ENCRYPTION (When sending):
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  Plaintext: "Hello Bob!"                                               │
+│       │                                                                 │
+│       │ 1. Generate random IV (12 bytes)                               │
+│       │    Each message gets unique IV                                 │
+│       ▼                                                                 │
+│  [Random IV: 0x3A, 0x7F, ...]                                          │
+│       │                                                                 │
+│       │ 2. Encrypt with AES-256-GCM                                    │
+│       │    Key: aB3dEf9GhIj... (256-bit)                              │
+│       │    IV: Random 12 bytes                                         │
+│       ▼                                                                 │
+│  Encrypted Data: [0x8F, 0x2A, 0x9B, ...]                               │
+│       │                                                                 │
+│       │ 3. Combine IV + Encrypted Data                                 │
+│       │    Format: [IV (12 bytes)][Encrypted Data]                     │
+│       ▼                                                                 │
+│  Combined: [IV][Encrypted]                                             │
+│       │                                                                 │
+│       │ 4. Encode to Base64                                            │
+│       ▼                                                                 │
+│  Base64: "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="                │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+DECRYPTION (When receiving):
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  Base64: "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg=="                │
+│       │                                                                 │
+│       │ 1. Decode from Base64                                          │
+│       ▼                                                                 │
+│  Combined: [IV][Encrypted]                                             │
+│       │                                                                 │
+│       │ 2. Extract IV and Encrypted Data                              │
+│       │    First 12 bytes = IV                                         │
+│       │    Rest = Encrypted Data                                       │
+│       ▼                                                                 │
+│  IV: [0x3A, 0x7F, ...]                                                 │
+│  Encrypted: [0x8F, 0x2A, 0x9B, ...]                                    │
+│       │                                                                 │
+│       │ 3. Decrypt with AES-256-GCM                                    │
+│       │    Key: aB3dEf9GhIj... (same key)                              │
+│       │    IV: Extracted from message                                  │
+│       ▼                                                                 │
+│  Decrypted Bytes: [72, 101, 108, 108, 111, ...]                        │
+│       │                                                                 │
+│       │ 4. Convert bytes to text                                       │
+│       ▼                                                                 │
+│  Plaintext: "Hello Bob!"                                               │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+COMPLETE MESSAGE FLOW DIAGRAM
+═══════════════════════════════════════════════════════════════════════════════
+
+┌──────────────┐                    ┌──────────────┐                    ┌──────────────┐
+│   USER A     │                    │   SERVER     │                    │   USER B     │
+│  (Alice)     │                    │              │                    │   (Bob)      │
+└──────┬───────┘                    └──────┬───────┘                    └──────┬───────┘
+       │                                    │                                    │
+       │ 1. Create Room                    │                                    │
+       │    Generate Key 🔑                │                                    │
+       │    Store in URL fragment          │                                    │
+       │                                    │                                    │
+       │ 2. Share URL ────────────────────────────────────────────────────────►│
+       │    (Out of band - Signal, etc.)    │                                    │
+       │                                    │                                    │
+       │                                    │                                    │ 3. Extract Key
+       │                                    │                                    │    from URL
+       │                                    │                                    │
+       │ 4. Type Message                   │                                    │
+       │    "Hello Bob!"                   │                                    │
+       │                                    │                                    │
+       │ 5. Encrypt with 🔑                │                                    │
+       │    "xK9mP2qR5sT8vW..."           │                                    │
+       │                                    │                                    │
+       │ 6. Send Encrypted ────────────────►                                    │
+       │    POST /api/messages             │                                    │
+       │    { text: "xK9mP2qR5sT8vW..." } │                                    │
+       │                                    │                                    │
+       │                                    │ 7. Store encrypted                 │
+       │                                    │    (Cannot read it!)               │
+       │                                    │                                    │
+       │                                    │ 8. Broadcast ──────────────────────►
+       │                                    │    WebSocket event                 │
+       │                                    │                                    │
+       │                                    │                                    │ 9. Receive Encrypted
+       │                                    │                                    │    "xK9mP2qR5sT8vW..."
+       │                                    │                                    │
+       │                                    │                                    │ 10. Decrypt with 🔑
+       │                                    │                                    │     "Hello Bob!"
+       │                                    │                                    │
+       │                                    │                                    │ 11. Display Message
+       │                                    │                                    │
+
+═══════════════════════════════════════════════════════════════════════════════
+SECURITY GUARANTEES
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ END-TO-END ENCRYPTION
+   • Messages encrypted BEFORE leaving your device
+   • Server only sees encrypted Base64 strings
+   • Server CANNOT decrypt without the key
+
+✅ ZERO-KNOWLEDGE ARCHITECTURE
+   • Encryption keys stored in URL fragments (#key=...)
+   • URL fragments NEVER sent to server (browser-only)
+   • Keys only exist in browser memory
+
+✅ FORWARD SECRECY
+   • Each message uses unique random IV (Initialization Vector)
+   • Same message encrypted twice = different ciphertext
+   • Even if one message is compromised, others stay safe
+
+✅ AUTHENTICATED ENCRYPTION
+   • AES-GCM provides message authentication
+   • Detects tampering or corruption
+   • Ensures message integrity
+
+✅ NO EXTERNAL DEPENDENCIES
+   • Uses browser Web Crypto API (built-in)
+   • No third-party encryption libraries
+   • Standard, audited cryptographic algorithms
+
+✅ CLIENT-SIDE ONLY
+   • All encryption/decryption happens in browser
+   • No server-side encryption processing
+   • Keys never leave your device
+
+═══════════════════════════════════════════════════════════════════════════════
+TECHNICAL DETAILS
+═══════════════════════════════════════════════════════════════════════════════
+
+Encryption Algorithm: AES-256-GCM
+  • AES: Advanced Encryption Standard (industry standard)
+  • 256-bit: Very strong encryption (2^256 possible keys)
+  • GCM: Galois/Counter Mode (provides authentication)
+
+Key Generation:
+  • 32 random bytes (256 bits)
+  • Generated using crypto.getRandomValues() (cryptographically secure)
+  • Encoded as URL-safe Base64 for sharing
+
+IV (Initialization Vector):
+  • 12 random bytes per message
+  • Ensures same message encrypted twice looks different
+  • Included with each encrypted message
+
+Key Storage:
+  • Stored in URL fragment (#key=...)
+  • URL fragments are NOT sent to server in HTTP requests
+  • Only visible in browser JavaScript
+  • Stored in React component state (memory only)
+
+Message Format:
+  • Base64 encoded string
+  • Contains: [IV (12 bytes)][Encrypted Data + Auth Tag]
+  • IV extracted during decryption
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT THE SERVER SEES
+═══════════════════════════════════════════════════════════════════════════════
+
+Server receives:
+┌─────────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│  {                                                                      │
+│    id: "xyz789",                                                       │
+│    sender: "red-monkey-abc",                                           │
+│    text: "Ol8sXy5hYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5eg==",              │
+│    timestamp: 1234567890,                                              │
+│    roomId: "abc123"                                                    │
+│  }                                                                      │
+│                                                                         │
+│  ❌ Server CANNOT read "text" field                                    │
+│  ❌ Server does NOT have encryption key                                │
+│  ❌ Server cannot decrypt messages                                     │
+│  ✅ Server only stores and forwards encrypted data                      │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY SHARING METHODS
+═══════════════════════════════════════════════════════════════════════════════
+
+The encryption key is shared OUT-OF-BAND (outside the application):
+
+✅ Secure Methods:
+   • Signal / WhatsApp (encrypted messaging apps)
+   • Email (if using encrypted email)
+   • In-person (tell them the URL)
+   • Secure note sharing apps
+
+⚠️ Less Secure (but still works):
+   • Regular SMS (not encrypted)
+   • Regular email (not encrypted)
+   • Social media DM (depends on platform)
+
+The key is in the URL fragment, so sharing the URL = sharing the key.
+
+Example URL:
+  https://yourapp.com/room/abc123#key=aB3dEf9GhIjKlMnOpQrStUvWxYz123456
+
+═══════════════════════════════════════════════════════════════════════════════
+SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Room creator generates encryption key (256-bit random)
+2. Key stored in URL fragment (never sent to server)
+3. Key shared out-of-band (Signal, WhatsApp, etc.)
+4. Both users have the key in their browsers
+5. Messages encrypted BEFORE sending to server
+6. Server stores encrypted data (cannot read it)
+7. Messages decrypted AFTER receiving from server
+8. Only users with the key can read messages
+
+Result: True end-to-end encryption with zero-knowledge architecture!
