@@ -5,21 +5,53 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16.1-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Elysia.js](https://img.shields.io/badge/Elysia.js-1.4-9d4edd?style=for-the-badge&logo=bun)](https://elysiajs.com/)
 [![Redis](https://img.shields.io/badge/Redis-Upstash-red?style=for-the-badge&logo=redis)](https://upstash.com/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.0-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 
 ## ✨ Features
 
-- ⚡ **Real-Time Messaging** - Instant message delivery powered by Upstash Realtime
-- 🔒 **True End-to-End Encryption** - Messages encrypted client-side with AES-256-GCM. Only participants can read messages, even if the server is compromised
-- 🔐 **Secure Key Sharing** - Encryption keys shared via URL fragments (never sent to server)
-- 💣 **Self-Destructing Rooms** - Automatic room expiration after 10 minutes
-- 🎨 **Modern UI/UX** - Beautiful, responsive interface built with Tailwind CSS 4
-- 🚀 **Lightning Fast** - Optimized performance with React 19 and Next.js 16
-- 📱 **Fully Responsive** - Works seamlessly across all devices
-- 🔐 **Anonymous Identity** - Auto-generated usernames for privacy
-- ⏱️ **Live Countdown** - Real-time TTL display for room expiration
-- 🎯 **Type-Safe** - Full TypeScript coverage with Zod validation
+### 📡 Real-Time
+
+- **Instant Message Delivery** - Real-time messaging powered by Upstash Realtime
+- **Live Updates** - Messages appear instantly without page refresh
+- **WebSocket Communication** - Efficient bidirectional communication
+
+### ⚡ Performance
+
+- **Serverless Infrastructure** - Scales automatically with Upstash Redis and Realtime
+- **Efficient Real-Time** - WebSocket-based messaging with minimal latency
+- **Robust Backend** - Bun-first web framework with exceptional performance.
+- **Bun Runtime** - Ultra-fast JavaScript runtime with native TypeScript support, faster startup times, and optimized package management
+- **React Compiler** - Automatic memoization and optimization, eliminating manual `useMemo`, `useCallback`, and `React.memo`
+- **Turbopack** - Rust-powered bundler from Vercel, up to 700x faster than Webpack for incremental builds
+
+### 🎨 UI/UX
+
+- **Modern Minimal Interface** - Clean, distraction-free design built with Tailwind CSS 4
+- **Progressive Web App (PWA)** - Installable app with offline support and service worker caching
+- **Intuitive Navigation** - Simple, straightforward user flow
+- **Fully Responsive** - Works seamlessly across all devices and screen sizes
+- **Enhanced Error Handling** - Clear error messages for room not found, room full, and encryption key issues
+
+### 👨‍💻 Developer Experience
+
+- **End-to-End Type Safety** - Type-safe API calls with Elysia and Eden
+- **Runtime Validation** - Zod schemas ensure data integrity at runtime
+- **Clean Architecture** - Well-organized codebase with separation of concerns
+
+### 🔐 Security
+
+- **True End-to-End Encryption** - Messages encrypted client-side with AES-256-GCM. Only participants can read messages, even if the server is compromised
+- **Secure Key Sharing** - Encryption keys shared via URL fragments (never sent to server)
+- **Zero-Knowledge Architecture** - Server never sees encryption keys or plaintext messages
+- **Client-Side Key Management** - Encryption keys never leave the browser, stored only in memory
+- **Anonymous Identity** - Auto-generated usernames for privacy with regeneration support
+- **No Persistent User Data** - No user accounts, tracking, or data collection
+- **Room Isolation** - Complete data separation between rooms with token-based authentication
+- **Self-Destructing Rooms** - Automatic room expiration after 10 minutes with manual destroy option
+- **Automatic Data Expiration** - Rooms and messages auto-delete after expiration
+- **Authenticated Encryption** - AES-GCM provides message authentication and tamper detection
 
 ## 🛠️ Tech Stack
 
@@ -27,10 +59,8 @@
 
 - **Next.js 16.1** - React framework with App Router
 - **React 19.2** - Latest React with React Compiler
-- **TypeScript 5.0** - Type-safe development
 - **Tailwind CSS 4** - Modern utility-first CSS framework
 - **TanStack Query** - Powerful data synchronization for React
-- **Date-fns** - Modern date utility library
 
 ### Backend & Infrastructure
 
@@ -38,36 +68,15 @@
 - **Upstash Redis** - Serverless Redis for data persistence
 - **Upstash Realtime** - Real-time messaging infrastructure
 - **Zod** - TypeScript-first schema validation
-- **Nanoid** - Secure, URL-friendly unique ID generation
 
 ### Development Tools
 
+- **TypeScript 5.0** - Type-safe development
+- **Turbopack** - Next-generation bundler for fast development
 - **ESLint** - Code linting and quality
 - **React Compiler** - Automatic React optimization
 - **Bun** - Fast JavaScript runtime and package manager
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐
-│   Next.js App   │
-│   (Frontend)    │
-└────────┬────────┘
-         │
-         │ HTTP/WebSocket
-         │
-┌────────▼────────┐
-│  Elysia API     │
-│  (Backend)      │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │         │
-┌───▼───┐ ┌──▼──────┐
-│ Redis │ │ Realtime│
-│(Data) │ │(Events) │
-└───────┘ └─────────┘
-```
+- **Serwist** - Service worker library for PWA functionality and offline support
 
 ## 🚀 Getting Started
 
@@ -114,75 +123,19 @@
 
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## 📖 Usage
+## 🔑 How Encryption Works
 
-1. **Create a Room** - Click "CREATE SECURE ROOM" on the homepage
-   - An encryption key is automatically generated and included in the URL
-2. **Share the Link** - Copy and share the **complete** room URL (including the encryption key after `#`)
-   - ⚠️ **Important**: The encryption key is in the URL fragment (`#key=...`) - make sure to share the full URL!
-3. **Chat Securely** - Messages are encrypted before sending and decrypted after receiving
-   - Look for the 🔒 "End-to-End Encrypted" indicator in the room header
-4. **Auto-Destruct** - Room automatically expires after 10 minutes
-5. **Manual Destroy** - Click "DESTROY NOW" to instantly delete the room
+Just Between Us uses **true end-to-end encryption** to ensure your messages remain private. All encryption happens client-side using the browser's Web Crypto API - no external dependencies required.
 
-### 🔑 How Encryption Works
+### Key Features
 
-- **Room Creator**: Generates a 256-bit encryption key when creating a room
-- **Key Sharing**: Key is included in the URL fragment (`#key=...`) - this part is never sent to the server
-- **Encryption**: Messages are encrypted client-side using AES-256-GCM before being sent
-- **Decryption**: Messages are decrypted client-side after being received
-- **Server**: Only sees encrypted data (base64 strings) - cannot read your messages
-
-## 🎯 Key Highlights
-
-- **Performance Optimized** - Built with React 19's compiler and Next.js 16's latest optimizations
-- **Scalable Architecture** - Serverless Redis and Realtime infrastructure scales automatically
-- **Type Safety** - End-to-end TypeScript with runtime validation via Zod
-- **Modern Stack** - Uses the latest stable versions of all frameworks
-- **Production Ready** - Clean code architecture with proper error handling
-
-## 📝 Project Structure
-
-```
-justbetweenus/
-├── src/
-│   ├── app/              # Next.js App Router pages
-│   │   ├── api/          # API routes (Elysia)
-│   │   ├── room/         # Chat room pages
-│   │   └── page.tsx      # Homepage
-│   ├── components/       # React components
-│   ├── hooks/           # Custom React hooks
-│   └── lib/             # Utilities and clients
-├── public/              # Static assets
-└── package.json         # Dependencies
-```
-
-## 🔐 Security Features
-
-- **End-to-End Encryption** - Messages encrypted with AES-256-GCM before sending to server
+- **AES-256-GCM Encryption** - Industry-standard authenticated encryption
 - **Zero-Knowledge Architecture** - Server never sees encryption keys or plaintext messages
 - **Secure Key Exchange** - Keys shared via URL fragments (never transmitted to server)
-- **Token-based Room Authentication** - Secure token-based room access control
-- **Room Isolation** - Complete data separation between rooms
-- **Automatic Data Expiration** - Rooms and messages auto-delete after 10 minutes
-- **No Persistent User Data** - No user accounts or data tracking
-- **Anonymous Identity System** - Auto-generated usernames for privacy
+- **Unique IV per Message** - Each message uses a random initialization vector for forward secrecy
+- **Client-Side Only** - All encryption/decryption happens in your browser
 
-## 🚧 Development
-
-```bash
-# Development server
-bun dev
-
-# Build for production
-bun build
-
-# Start production server
-bun start
-
-# Lint code
-bun lint
-```
+For a detailed explanation of the encryption flow, key generation, message encryption, and security guarantees, see the [End-to-End Encryption Documentation](E2EE.md).
 
 ## 📄 License
 
